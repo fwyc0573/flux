@@ -56,7 +56,12 @@ mkdir -p build
 cd build
 CMAKE=${CMAKE:-cmake} # default cmake version maybe <= 3.19
 if [ ! -f CMakeCache.txt ] || [ -z ${FLUX_BUILD_SKIP_CMAKE} ]; then
+    CUDA_COMPILER_FLAG=""
+    if [[ -n ${CUDA_HOME} ]]; then
+        CUDA_COMPILER_FLAG="-DCMAKE_CUDA_COMPILER=${CUDA_HOME}/bin/nvcc"
+    fi
     ${CMAKE} .. \
+        ${CUDA_COMPILER_FLAG} \
         -DCMAKE_EXPORT_COMPILE_COMMANDS=1 \
         ${CUDAARCH_ARGS} \
         -DNVSHMEM_BUILD_TESTS=OFF \

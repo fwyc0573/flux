@@ -2,8 +2,11 @@
 set -x
 set -e
 
+## Set your CUDA installation path here based on the output of `which nvcc`
+export CUDA_HOME=/usr/local/cuda-12.4
+
 ## Change export PATH if cuda is not at default path
-export PATH=/usr/local/cuda/bin:$PATH
+export PATH=${CUDA_HOME}/bin:$PATH
 CMAKE=${CMAKE:-cmake}
 
 ARCH=""
@@ -125,6 +128,9 @@ function build_nccl() {
     export BUILDDIR=${NCCL_ROOT}/build
     export PREFIX=${BUILDDIR}/local
 
+    # Export CXXFLAGS so they are available to sub-make processes
+    export CXXFLAGS="${CXXFLAGS} -Wno-maybe-uninitialized -I${NCCL_ROOT}/src"
+
     if [[ -n $ARCH ]]; then
         NCCL_COMPILE_OPTIONS_ARCH="" # default none
         arch_list=()
@@ -132,14 +138,19 @@ function build_nccl() {
         for arch in "${arch_list[@]}"; do
             NCCL_COMPILE_OPTIONS_ARCH="-gencode=arch=compute_${arch},code=sm_${arch} ${NCCL_COMPILE_OPTIONS_ARCH}"
         done
+        # The CXXFLAGS are now passed via environment, so we remove them from the command line
         make -j${nproc} src.staticlib NVCC_GENCODE="${NCCL_COMPILE_OPTIONS_ARCH}" VERBOSE=1
     else
+        # The CXXFLAGS are now passed via environment, so we remove them from the command line
         make -j${nproc} src.staticlib VERBOSE=1
     fi
     # only install static lib
     mkdir -p ${PREFIX}/lib
     cp -P -v ${BUILDDIR}/lib/lib* ${PREFIX}/lib/
     cp -P -v -r ${BUILDDIR}/include ${PREFIX}/
+    
+    # Unset the variable so it doesn't affect subsequent build steps
+    unset CXXFLAGS
     popd
 }
 
@@ -156,6 +167,9 @@ function build_flux_cuda() {
             -DBUILD_TEST=${BUILD_TEST}
             -DCMAKE_INSTALL_PREFIX=${LIBFLUX_PREFIX}
         )
+        if [[ -n ${CUDA_HOME} ]]; then
+            CMAKE_ARGS+=(-DCMAKE_CUDA_COMPILER=${CUDA_HOME}/bin/nvcc)
+        fi
         if [ $WITH_PROTOBUF == "ON" ]; then
             CMAKE_ARGS+=(
                 -DWITH_PROTOBUF=ON

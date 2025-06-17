@@ -148,10 +148,13 @@ set(COMMON_HEADER_DIRS
   ${PROJECT_SOURCE_DIR}/3rdparty/cutlass/tools/util/include
   ${PROJECT_SOURCE_DIR}/3rdparty/cutlass/tools/library/include
   ${PROJECT_SOURCE_DIR}/3rdparty/cutlass/tools/profiler/include
+  ${PROJECT_SOURCE_DIR}/3rdparty/nccl/build/local/include
 )
 
 set(COMMON_LIB_DIRS "")
 list(APPEND COMMON_LIB_DIRS "${CUDAToolkit_LIBRARY_DIR}")
+list(APPEND COMMON_LIB_DIRS "${PROJECT_SOURCE_DIR}/3rdparty/nccl/build/local/lib")
+
 message(ENABLE_NVSHMEM "ENABLE_NVSHMEM is set to: ${ENABLE_NVSHMEM}")
 if(ENABLE_NVSHMEM)
   add_definitions(-DFLUX_SHM_USE_NVSHMEM)
